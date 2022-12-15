@@ -1,13 +1,13 @@
-const { MessageEmbed } = require('discord.js');
+import { EmbedBuilder, ChannelType } from 'discord.js'
 
 const sendStats = async (client, message) => {
 
     // Get data
     const guild = client.guilds.cache.get(message.guildId)
-    const members = await guild.members.fetch();
-    const totalServers = client.guilds.cache.size;
-    let totalMembers = 0;
-    let totalBots = 0;
+    const members = await guild.members.fetch({ withPresences: true })
+    const totalServers = client.guilds.cache.size
+    let totalMembers = 0
+    let totalBots = 0
     members.map(m => {
         if (m.user.bot) {
             totalBots += 1
@@ -16,13 +16,13 @@ const sendStats = async (client, message) => {
         }
     })
 
-    const onlineMembers = members.filter(member => !member.user.bot && member.presence.status == "online").size;
-    const offlineMembers = members.filter(member => !member.user.bot && member.presence.status == "offline").size;
-    const onlineBots = members.filter(member => member.user.bot && member.presence?.clientStatus?.web == "online").size;
-    // const offlineBots = (await guild.members.fetch()).filter(member => member.user.bot && member.presence.status == "online").size;
+    const onlineMembers = members.filter(member => !member.user.bot && member.presence?.status == "online").size
+    const offlineMembers = members.filter(member => !member.user.bot && member.presence?.status == "offline").size
+    const onlineBots = members.filter(member => member.user.bot && member.presence?.clientStatus?.web == "online").size
+    // const offlineBots = (await guild.members.fetch()).filter(member => member.user.bot && member.presence.status == "online").size
 
     // Style message
-    const embed = new MessageEmbed()
+    const embed = new EmbedBuilder()
         .setThumbnail(message.guild.iconURL())
         .setTitle(`Server Stats`)
         .addFields(
@@ -54,17 +54,29 @@ const sendStats = async (client, message) => {
     })
     embed.addFields({ name: 'Roles', value: rolesText })
 
+    // CHANNELS
+    const channels = await guild.channels.fetch()
+    let totalChannels = 0
+    channels.map(channel => {
+        if (channel.type !== ChannelType.GuildCategory) {
+            totalChannels += 1
+        }
+    })
+    embed.addFields({ name: 'Channels', value: `${totalChannels}`, inline: true})
+
     // Send message
-    await message.channel.send({ embeds: [embed] });
+    await message.channel.send({ embeds: [embed] })
 
 }
 
-module.exports = {
+const command = {
 	name : 'stats',
     description : 'Print server stats',
 	async execute(message, args, client) {
 
-        await sendStats(client, message);
+        await sendStats(client, message)
 
 	},
-};
+}
+
+export { command }
